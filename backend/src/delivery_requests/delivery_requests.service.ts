@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { Role } from '../auth/enums/role.enum.js';
 
 @Injectable()
 export class DeliveryRequestsService {
@@ -9,14 +10,18 @@ export class DeliveryRequestsService {
   async findAllForUser(user: { userId: string; role: string }) {
     let where = {};
 
+   
     switch (user.role) {
-      case 'Admin':
+      case Role.SystemAdmin:
         where = {}; // no filter — sees everything
         break;
-      case 'Retailer':
+      case Role.Dispatcher:
+        where = {}; // dispatcher needs visibility to assign riders — adjust if you want it scoped differently
+        break;
+      case Role.Retailer:
         where = { created_by: user.userId };
         break;
-      case 'Rider':
+      case Role.Rider:
         where = { assigned_rider_id: user.userId };
         break;
       default:

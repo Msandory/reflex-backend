@@ -1,6 +1,6 @@
 export enum Role {
   SystemAdmin = 'system_admin',
-  Dispatcher = 'Dispatcher',
-  Retailer = 'Retailer',
-  Rider = 'Rider',
+  Dispatcher = 'dispatcher',
+  Retailer = 'retailer_staff',
+  Rider = 'rider',
 }
