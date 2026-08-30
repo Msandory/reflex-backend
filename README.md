@@ -9,7 +9,7 @@
 
 Traditional delivery apps are clunky, disconnected, and boring. **Reflex** changes the game. 
 
-We set out to build a fully integrated, real-time logistics ecosystem that connects retailers, dispatchers, and riders into one seamless flow. But we didn't stop at just moving packages from Point A to Point B—we wanted to make the experience genuinely engaging. That's why we engineered a beautifully responsive, glassmorphism-inspired interface and integrated a core **Gamification Engine** that actually rewards riders for their hard work.
+We set out to build a fully integrated, real-time logistics ecosystem that connects retailers, dispatchers, and riders into one seamless flow. Not only moving packages from Point A to Point B—we wanted to make the experience genuinely engaging. Engineered a beautifully responsive, glassmorphism-inspired interface and integrated a core **Gamification Engine** that actually rewards riders for their hard work.
 
 This isn't just a delivery app; it's a premium logistics experience.
 
