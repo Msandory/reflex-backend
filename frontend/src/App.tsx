@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Store, Truck, Bike } from 'lucide-react'
 import RetailerView from './RetailerView'
 import DispatcherView from './DispatcherView'
 import RiderView from './RiderView'
@@ -12,25 +13,27 @@ function App() {
   return (
     <div className="app-container">
       <header className="header">
-        <h1>Reflex</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Truck color="var(--accent-primary)" /> Reflex
+        </h1>
         <div className="role-switcher">
           <button 
             className={`btn ${role === 'retailer' ? '' : 'secondary'}`}
             onClick={() => setRole('retailer')}
           >
-            Retailer
+            <Store size={18} /> Retailer
           </button>
           <button 
             className={`btn ${role === 'dispatcher' ? '' : 'secondary'}`}
             onClick={() => setRole('dispatcher')}
           >
-            Dispatcher
+            <Truck size={18} /> Dispatcher
           </button>
           <button 
             className={`btn ${role === 'rider' ? '' : 'secondary'}`}
             onClick={() => setRole('rider')}
           >
-            Rider
+            <Bike size={18} /> Rider
           </button>
         </div>
       </header>

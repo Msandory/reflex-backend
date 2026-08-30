@@ -1,9 +1,12 @@
 import { useState } from 'react'
-import { DeliveryRequest } from './RetailerView'
+import { Users, CheckCircle, Package } from 'lucide-react'
+import type { DeliveryRequest } from './RetailerView'
 
 const MOCK_REQUESTS: DeliveryRequest[] = [
   { id: '1', request_number: 'REQ-001', customer_name: 'John Doe', address: 'Westlands', item_description: 'Blender', status: 'open' },
-  { id: '2', request_number: 'REQ-002', customer_name: 'Jane Smith', address: 'Kilimani', item_description: 'Painkillers', status: 'assigned', assigned_rider: 'James' }
+  { id: '2', request_number: 'REQ-002', customer_name: 'Jane Smith', address: 'Kilimani', item_description: 'Painkillers', status: 'assigned', assigned_rider: 'James' },
+  { id: '3', request_number: 'REQ-003', customer_name: 'Tech Store', address: 'CBD', item_description: 'Charger', status: 'picked_up', assigned_rider: 'James' },
+  { id: '4', request_number: 'REQ-004', customer_name: 'Hardware Co.', address: 'Industrial Area', item_description: 'Pipes', status: 'delivered', assigned_rider: 'Sarah' }
 ]
 
 const AVAILABLE_RIDERS = ['James', 'Kip', 'Sarah']
@@ -15,45 +18,79 @@ export default function DispatcherView() {
     setRequests(requests.map(req => req.id === id ? { ...req, status: 'assigned', assigned_rider: rider } : req))
   }
 
-  return (
-    <div className="animate-in">
-      <h2>Dispatcher Control Center</h2>
-      <p>Assign open delivery requests to available riders.</p>
+  const Column = ({ title, status, icon: Icon }: { title: string, status: DeliveryRequest['status'], icon: any }) => (
+    <div className="kanban-column">
+      <h3>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Icon size={18} /> {title}
+        </span>
+        <span className="count">{requests.filter(r => r.status === status).length}</span>
+      </h3>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
-        {requests.map(req => (
-          <div key={req.id} className="glass-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0 }}>{req.request_number}</h3>
-              <span className={`badge ${req.status}`}>{req.status.replace('_', ' ')}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {requests.filter(r => r.status === status).map(req => (
+          <div key={req.id} className="glass-card" style={{ padding: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <strong>{req.request_number}</strong>
             </div>
-            <p><strong>Item:</strong> {req.item_description}</p>
-            <p><strong>Location:</strong> {req.address}</p>
+            <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.875rem' }}>{req.address}</p>
+            <p style={{ margin: '0 0 1rem 0', fontSize: '0.875rem', opacity: 0.7 }}>{req.item_description}</p>
             
-            {req.status === 'open' ? (
-              <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem' }}>
-                <select className="form-control" style={{ flex: 1 }} id={`rider-${req.id}`}>
-                  <option value="">Select Rider...</option>
+            {status === 'open' ? (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <select className="form-control" style={{ padding: '0.5rem' }} id={`rider-${req.id}`}>
+                  <option value="">Rider...</option>
                   {AVAILABLE_RIDERS.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
                 <button 
-                  className="btn"
+                  className="btn" style={{ padding: '0.5rem 1rem' }}
                   onClick={() => {
                     const select = document.getElementById(`rider-${req.id}`) as HTMLSelectElement
                     if (select.value) handleAssign(req.id, select.value)
                   }}
                 >
-                  Assign
+                  Go
                 </button>
               </div>
             ) : (
-              <p style={{ marginTop: '1.5rem', color: 'var(--accent-primary)', fontWeight: 'bold' }}>
-                Assigned to {req.assigned_rider}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontSize: '0.875rem', fontWeight: 600 }}>
+                <Users size={14} /> {req.assigned_rider}
+              </div>
             )}
           </div>
         ))}
       </div>
+    </div>
+  )
+
+  return (
+    <div className="animate-in">
+      
+      <div className="stats-grid">
+        <div className="stat-card">
+          <Users size={24} />
+          <span className="label">Active Riders</span>
+          <span className="value">3</span>
+        </div>
+        <div className="stat-card">
+          <Package size={24} />
+          <span className="label">Open Requests</span>
+          <span className="value">{requests.filter(r => r.status === 'open').length}</span>
+        </div>
+        <div className="stat-card">
+          <CheckCircle size={24} />
+          <span className="label">Delivered Today</span>
+          <span className="value">{requests.filter(r => r.status === 'delivered').length}</span>
+        </div>
+      </div>
+
+      <div className="kanban-board">
+        <Column title="Open" status="open" icon={Package} />
+        <Column title="Assigned" status="assigned" icon={Users} />
+        <Column title="Picked Up" status="picked_up" icon={Package} />
+        <Column title="Delivered" status="delivered" icon={CheckCircle} />
+      </div>
+
     </div>
   )
 }
