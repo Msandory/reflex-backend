@@ -1,27 +1,65 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CheckCircle, MapPin, Package, Award } from 'lucide-react'
-import type { DeliveryRequest } from './RetailerView'
-
-const MOCK_REQUESTS: DeliveryRequest[] = [
-  { id: '2', request_number: 'REQ-002', customer_name: 'Jane Smith', address: 'Kilimani', item_description: 'Painkillers', status: 'assigned', assigned_rider: 'James' },
-  { id: '3', request_number: 'REQ-003', customer_name: 'Tech Store', address: 'Nairobi CBD', item_description: 'Laptop Charger', status: 'picked_up', assigned_rider: 'James' }
-]
+import { api, type DeliveryRequest } from './api'
 
 export default function RiderView() {
-  const [requests, setRequests] = useState<DeliveryRequest[]>(MOCK_REQUESTS)
-  const [podRecipient, setPodRecipient] = useState('')
-  const [points, setPoints] = useState(1250) // Mock existing points
+  const [currentRiderId, setCurrentRiderId] = useState<string | null>(null)
+  const [requests, setRequests] = useState<DeliveryRequest[]>([])
+  const [podRecipients, setPodRecipients] = useState<Record<string, string>>({})
+  const [points, setPoints] = useState(0)
 
-  const handleUpdateStatus = (id: string, newStatus: DeliveryRequest['status']) => {
-    setRequests(requests.map(req => req.id === id ? { ...req, status: newStatus } : req))
+  const fetchData = async () => {
+    if (!currentRiderId) return;
+    try {
+      const [reqRes, userRes] = await Promise.all([
+        api.get('/delivery-requests'),
+        api.get(`/users/${currentRiderId}`).catch(() => ({ data: { points: 0 } }))
+      ])
+      // Only show requests assigned to this rider
+      const newRequests = reqRes.data.filter((r: DeliveryRequest) => r.assigned_rider_id === currentRiderId);
+      setRequests(prev => JSON.stringify(prev) === JSON.stringify(newRequests) ? prev : newRequests);
+      setPoints(prev => prev === userRes.data.points ? prev : (userRes.data.points || 0));
+    } catch (e) {
+      console.error('API Error:', e)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+    const interval = setInterval(fetchData, 5000)
+    return () => clearInterval(interval)
+  }, [currentRiderId])
+
+  const handleUpdateStatus = async (id: string, newStatus: DeliveryRequest['status']) => {
+    try {
+      await api.patch(`/delivery-requests/${id}`, { status: newStatus })
+      fetchData() // Refresh points and status
+    } catch (e) {
+      console.error('API Error:', e)
+    }
   }
 
   const handleProofOfDelivery = (id: string, e: React.FormEvent) => {
     e.preventDefault()
-    if (!podRecipient) return
+    if (!podRecipients[id]) return
     handleUpdateStatus(id, 'delivered')
-    setPodRecipient('')
-    setPoints(prev => prev + 50) // Reward points!
+    setPodRecipients({...podRecipients, [id]: ''})
+  }
+
+  if (!currentRiderId) {
+    return (
+      <div className="animate-in" style={{ maxWidth: '400px', margin: '4rem auto', textAlign: 'center' }}>
+        <h2 style={{ marginBottom: '2rem' }}>Select Rider Profile</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <button className="glass-card btn" style={{ padding: '1.5rem', fontSize: '1.2rem', textAlign: 'left', display: 'flex', justifyContent: 'space-between' }} onClick={() => setCurrentRiderId('rider-1')}>
+            <span>James</span> <span style={{ opacity: 0.5, fontSize: '1rem' }}>rider-1</span>
+          </button>
+          <button className="glass-card btn" style={{ padding: '1.5rem', fontSize: '1.2rem', textAlign: 'left', display: 'flex', justifyContent: 'space-between' }} onClick={() => setCurrentRiderId('rider-2')}>
+            <span>Sarah</span> <span style={{ opacity: 0.5, fontSize: '1rem' }}>rider-2</span>
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -47,10 +85,10 @@ export default function RiderView() {
             
             <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
               <p style={{ margin: '0 0 0.75rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <CheckCircle size={18} color="var(--text-secondary)" /> <strong>To:</strong> {req.customer_name}
+                <CheckCircle size={18} color="var(--text-secondary)" /> <strong>To:</strong> {req.customer_name || 'N/A'}
               </p>
               <p style={{ margin: '0 0 0.75rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <MapPin size={18} color="var(--text-secondary)" /> <strong>Location:</strong> {req.address}
+                <MapPin size={18} color="var(--text-secondary)" /> <strong>Location:</strong> {req.address || 'N/A'}
               </p>
               <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Package size={18} color="var(--text-secondary)" /> <strong>Item:</strong> {req.item_description}
@@ -69,8 +107,8 @@ export default function RiderView() {
                   <label>Recipient Name</label>
                   <input 
                     className="form-control" 
-                    value={podRecipient} 
-                    onChange={e => setPodRecipient(e.target.value)} 
+                    value={podRecipients[req.id] || ''} 
+                    onChange={e => setPodRecipients({...podRecipients, [req.id]: e.target.value})} 
                     required 
                     placeholder="Signature / Name"
                   />

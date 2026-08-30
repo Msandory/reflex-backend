@@ -1,37 +1,44 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PlusCircle, Search } from 'lucide-react'
-
-export interface DeliveryRequest {
-  id: string
-  request_number: string
-  customer_name: string
-  address: string
-  item_description: string
-  status: 'open' | 'assigned' | 'picked_up' | 'delivered'
-  assigned_rider?: string
-}
-
-const MOCK_REQUESTS: DeliveryRequest[] = [
-  { id: '1', request_number: 'REQ-001', customer_name: 'John Doe', address: 'Westlands', item_description: 'Blender', status: 'open' },
-  { id: '2', request_number: 'REQ-002', customer_name: 'Jane Smith', address: 'Kilimani', item_description: 'Painkillers', status: 'assigned', assigned_rider: 'James' }
-]
+import { api, type DeliveryRequest } from './api'
 
 export default function RetailerView() {
-  const [requests, setRequests] = useState<DeliveryRequest[]>(MOCK_REQUESTS)
+  const [requests, setRequests] = useState<DeliveryRequest[]>([])
   const [formData, setFormData] = useState({ customer_name: '', phone: '', address: '', item_description: '' })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const newReq: DeliveryRequest = {
-      id: Date.now().toString(),
-      request_number: `REQ-00${requests.length + 1}`,
-      customer_name: formData.customer_name,
-      address: formData.address,
-      item_description: formData.item_description,
-      status: 'open'
+  const fetchRequests = async () => {
+    try {
+      const { data } = await api.get('/delivery-requests')
+      setRequests(data.reverse())
+    } catch (e) {
+      console.error('API Error:', e)
     }
-    setRequests([newReq, ...requests])
-    setFormData({ customer_name: '', phone: '', address: '', item_description: '' })
+  }
+
+  useEffect(() => {
+    fetchRequests()
+    const interval = setInterval(fetchRequests, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await api.post('/delivery-requests', {
+        id: Date.now().toString().slice(-10),
+        request_number: `REQ-${Date.now().toString().slice(-4)}`,
+        customer_id: 'cust-1', // Mock customer id
+        customer_name: formData.customer_name,
+        address: formData.address,
+        item_description: formData.item_description,
+        status: 'open',
+        created_by: 'user-1' // Mock creator id
+      })
+      setFormData({ customer_name: '', phone: '', address: '', item_description: '' })
+      fetchRequests()
+    } catch (e) {
+      console.error('API Error:', e)
+    }
   }
 
   return (
@@ -78,12 +85,12 @@ export default function RetailerView() {
             <div key={req.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem' }}>
               <div>
                 <h3 style={{ margin: '0 0 0.5rem 0' }}>{req.request_number} <span style={{ color: 'var(--text-secondary)', fontWeight: 'normal', fontSize: '1rem' }}>| {req.item_description}</span></h3>
-                <p style={{ margin: 0 }}>To: {req.customer_name}, {req.address}</p>
-                {req.assigned_rider && <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: 'var(--accent-primary)', fontWeight: 600 }}>Rider: {req.assigned_rider}</p>}
+                <p style={{ margin: 0 }}>To: {req.customer_name || 'N/A'}, {req.address || 'N/A'}</p>
               </div>
               <span className={`badge ${req.status}`}>{req.status.replace('_', ' ')}</span>
             </div>
           ))}
+          {requests.length === 0 && <p style={{ opacity: 0.5 }}>No requests yet.</p>}
         </div>
       </div>
 
