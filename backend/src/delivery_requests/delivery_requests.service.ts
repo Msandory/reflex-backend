@@ -6,8 +6,25 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class DeliveryRequestsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
+  async findAllForUser(user: { userId: string; role: string }) {
+    let where = {};
+
+    switch (user.role) {
+      case 'Admin':
+        where = {}; // no filter — sees everything
+        break;
+      case 'Retailer':
+        where = { created_by: user.userId };
+        break;
+      case 'Rider':
+        where = { assigned_rider_id: user.userId };
+        break;
+      default:
+        where = { id: 'no-match' }; // unknown role -> sees nothing, fails safe
+    }
+
     const requests = await this.prisma.delivery_requests.findMany({
+      where,
       include: { customers: true },
     });
     return requests.map(req => ({
@@ -24,25 +41,48 @@ export class DeliveryRequestsService {
 
   async create(data: any) {
     const { customer_name, address, phone, customer_id, ...rest } = data;
-    
-    // Auto-generate a new customer for every request for demo purposes
-    const newCustomerId = `cust-${Date.now().toString().slice(-4)}`;
 
-    await this.prisma.customers.create({
-      data: {
-        id: newCustomerId,
-        name: customer_name || 'Unknown',
-        address: address || 'Unknown',
-        phone: phone || '',
+    let resolvedCustomerId = customer_id;
+
+    if (resolvedCustomerId) {
+      // A customer_id was passed in — make sure it actually exists before trusting it
+      const existing = await this.prisma.customers.findUnique({
+        where: { id: resolvedCustomerId },
+      });
+      if (!existing) {
+        resolvedCustomerId = null; // fall through to lookup/create below
       }
-    });
+    }
 
-    const newRequest = await this.prisma.delivery_requests.create({ 
+    if (!resolvedCustomerId && phone) {
+      // No valid id given — try to match an existing customer by phone
+      const existingByPhone = await this.prisma.customers.findFirst({
+        where: { phone },
+      });
+      if (existingByPhone) {
+        resolvedCustomerId = existingByPhone.id;
+      }
+    }
+
+    if (!resolvedCustomerId) {
+      // Genuinely new customer — create one
+      resolvedCustomerId = `cust-${Date.now().toString().slice(-4)}`;
+      await this.prisma.customers.create({
+        data: {
+          id: resolvedCustomerId,
+          name: customer_name || 'Unknown',
+          address: address || 'Unknown',
+          phone: phone || '',
+        },
+      });
+    }
+
+    const newRequest = await this.prisma.delivery_requests.create({
       data: {
         ...rest,
-        customer_id: newCustomerId
+        customer_id: resolvedCustomerId,
       },
-      include: { customers: true }
+      include: { customers: true },
     });
 
     return {
