@@ -7,6 +7,7 @@ export default function RiderView() {
   const [requests, setRequests] = useState<DeliveryRequest[]>([])
   const [podRecipients, setPodRecipients] = useState<Record<string, string>>({})
   const [points, setPoints] = useState(0)
+  const [riderInfo, setRiderInfo] = useState<{name: string, email: string} | null>(null)
 
   const fetchData = async () => {
     if (!currentRiderId) return;
@@ -19,6 +20,10 @@ export default function RiderView() {
       const newRequests = reqRes.data.filter((r: DeliveryRequest) => r.assigned_rider_id === currentRiderId);
       setRequests(prev => JSON.stringify(prev) === JSON.stringify(newRequests) ? prev : newRequests);
       setPoints(prev => prev === userRes.data.points ? prev : (userRes.data.points || 0));
+      setRiderInfo(prev => prev?.name === userRes.data.name ? prev : {
+        name: userRes.data.name || 'Unknown',
+        email: userRes.data.email || ''
+      });
     } catch (e) {
       console.error('API Error:', e)
     }
@@ -65,6 +70,17 @@ export default function RiderView() {
   return (
     <div className="animate-in" style={{ maxWidth: '600px', margin: '0 auto' }}>
       
+      {/* Rider Header Info */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)' }}>Welcome back, {riderInfo?.name}</h2>
+          <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.9rem', color: 'var(--accent-primary)' }}>{riderInfo?.email}</p>
+        </div>
+        <button className="btn secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }} onClick={() => setCurrentRiderId(null)}>
+          Sign Out
+        </button>
+      </div>
+
       {/* Rewards Card */}
       <div className="reward-card">
         <Award size={48} color="var(--accent-secondary)" style={{ marginBottom: '1rem' }} />

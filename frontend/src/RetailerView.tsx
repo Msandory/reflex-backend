@@ -42,7 +42,7 @@ export default function RetailerView() {
   }
 
   return (
-    <div className="animate-in" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2.5rem' }}>
+    <div className="animate-in split-layout">
       
       {/* Creation Form */}
       <div className="glass-card delay-1">
