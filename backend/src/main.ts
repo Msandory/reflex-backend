@@ -7,6 +7,6 @@ async function bootstrap() {
     instrument: ObserveInstrument,
   });
   app.enableCors();
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3200);
 }
 await bootstrap();
