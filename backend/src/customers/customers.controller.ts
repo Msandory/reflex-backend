@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client.js';
@@ -20,6 +21,11 @@ import { Role } from '../auth/enums/role.enum.js';
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
+  @Get('search')
+  @Roles(Role.SystemAdmin, Role.Dispatcher, Role.Retailer)
+  search(@Query('q') q: string) {
+    return this.customersService.search(q || '');
+  }
   @Get()
   @Roles(Role.SystemAdmin, Role.Dispatcher, Role.Retailer)
   findAll() {
@@ -52,4 +58,5 @@ export class CustomersController {
   remove(@Param('id') id: string) {
     return this.customersService.remove(id);
   }
+ 
 }
