@@ -13,6 +13,6 @@ async function bootstrap() {
   (BigInt.prototype as any).toJSON = function () {
   return Number(this);
 };
-  await app.listen(process.env.PORT ?? 3200);
+  await app.listen(process.env.PORT ?? 3000);
 }
 await bootstrap();
